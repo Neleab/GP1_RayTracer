@@ -23,6 +23,7 @@ Renderer::Renderer(SDL_Window * pWindow) :
 
 void Renderer::Render(Scene* pScene) const
 {
+	Vector3 cameraOrigen{ 0,0,0 };
 	Camera& camera = pScene->GetCamera();
 	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
@@ -35,7 +36,18 @@ void Renderer::Render(Scene* pScene) const
 			gradient += py / static_cast<float>(m_Width);
 			gradient /= 2.0f;
 
-			ColorRGB finalColor{ gradient, gradient, gradient };
+			int aspectRatio{ m_Width/ m_Height};
+			float pixelX = px + 0.5f;
+			float pixelY = py + 0.5f;
+
+			float cameraX{ ((2.f * (pixelX + 0.5f) / m_Width) - 1.f) * aspectRatio };
+			float cameraY{ 1.f - (2.f * pixelY)/ m_Height};
+
+			Vector3 rayDirection{ cameraX ,cameraY ,1 };
+			Vector3 rayDirectionNormelized{ rayDirection.Normalized() };
+
+			Ray hitRay{ cameraOrigen,rayDirectionNormelized};
+			ColorRGB finalColor{ rayDirectionNormelized.x, rayDirectionNormelized.y, rayDirectionNormelized.z };
 
 			//Update Color in Buffer
 			finalColor.MaxToOne();

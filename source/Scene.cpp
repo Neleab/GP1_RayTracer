@@ -28,7 +28,51 @@ namespace dae {
 
 	void dae::Scene::GetClosestHit(const Ray& ray, HitRecord& closestHit) const
 	{
+		float currentClosedHit{0};
+		bool firstHit{ false };
 		//todo W1
+		//Spheres
+		for (int i = 0; i < m_SphereGeometries.size(); i++)
+		{
+			GeometryUtils::HitTest_Sphere(m_SphereGeometries[i], ray, closestHit);
+			if (closestHit.didHit)
+			{
+				if (!firstHit)
+				{
+					currentClosedHit = closestHit.t;
+					firstHit = true;
+					closestHit.materialIndex = m_SphereGeometries[i].materialIndex;
+				}
+				if (currentClosedHit > closestHit.t)
+				{
+					currentClosedHit = closestHit.t;
+					closestHit.materialIndex = m_SphereGeometries[i].materialIndex;
+				}
+			}
+		}
+		//Planes
+		for (int i = 0; i < m_PlaneGeometries.size(); i++)
+		{
+			GeometryUtils::HitTest_Plane(m_PlaneGeometries[i], ray, closestHit);
+			if (closestHit.didHit)
+			{
+				if (!firstHit)
+				{
+					currentClosedHit = closestHit.t;
+					firstHit = true;
+					closestHit.materialIndex = m_PlaneGeometries[i].materialIndex;
+				}
+				if (currentClosedHit > closestHit.t)
+				{
+					currentClosedHit = closestHit.t;
+					closestHit.materialIndex = m_PlaneGeometries[i].materialIndex;
+				}
+			}
+		}
+
+		closestHit.didHit = firstHit;
+		return;
+
 		assert(false && "No Implemented Yet!");
 	}
 

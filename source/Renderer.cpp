@@ -36,18 +36,54 @@ void Renderer::Render(Scene* pScene) const
 			gradient += py / static_cast<float>(m_Width);
 			gradient /= 2.0f;
 
-			int aspectRatio{ m_Width/ m_Height};
+			float widthScreen{ static_cast<float>(m_Width) };
+			float heightScreen{ static_cast<float>(m_Height) };
+
+			float aspectRatio{ widthScreen/ heightScreen};
 			float pixelX = px + 0.5f;
 			float pixelY = py + 0.5f;
 
-			float cameraX{ ((2.f * (pixelX + 0.5f) / m_Width) - 1.f) * aspectRatio };
-			float cameraY{ 1.f - (2.f * pixelY)/ m_Height};
+			float cameraX{ ((2.f * (pixelX + 0.5f) / widthScreen) - 1.f) * aspectRatio };
+			float cameraY{ 1.f - (2.f * pixelY)/ heightScreen};
 
 			Vector3 rayDirection{ cameraX ,cameraY ,1 };
 			Vector3 rayDirectionNormelized{ rayDirection.Normalized() };
 
 			Ray hitRay{ cameraOrigen,rayDirectionNormelized};
-			ColorRGB finalColor{ rayDirectionNormelized.x, rayDirectionNormelized.y, rayDirectionNormelized.z };
+
+			//ColorRGB finalColor{ rayDirectionNormelized.x, rayDirectionNormelized.y, rayDirectionNormelized.z };
+
+			//TODO#4
+			ColorRGB finalColor{};
+			HitRecord closeHit{};
+
+			//Sphere testSphere{ Vector3{0.f,0.f,100.f},50.f,0 };
+			//GeometryUtils::HitTest_Sphere(testSphere, hitRay, closeHit);
+			//if (closeHit.didHit)
+			//{
+			//	const float scaled_t{ (closeHit.t - 50.f) / 40.f };
+			//	//finalColor = materials[closeHit.materialIndex]->Shade();
+			//	//TODO 5
+			//	finalColor = { scaled_t, scaled_t ,scaled_t };
+			//}
+
+			//TODO6
+			pScene->GetClosestHit(hitRay,closeHit);
+			if (closeHit.didHit)
+			{
+				finalColor = materials[closeHit.materialIndex]->Shade();
+			}
+
+			//TODO 9/10
+			//Plane testPlane{ {0.f,-50.f,0.f},{0.f,1.f,0.f},0 };
+			//GeometryUtils::HitTest_Plane(testPlane, hitRay, closeHit);
+			//if (closeHit.didHit)
+			//{
+			//	const float scaled_t{ closeHit.t / 500.f };
+			//	//finalColor = materials[closeHit.materialIndex]->Shade();
+			//	finalColor = { scaled_t, scaled_t ,scaled_t };
+			//}
+
 
 			//Update Color in Buffer
 			finalColor.MaxToOne();

@@ -12,7 +12,24 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W1
+			Vector3 line{sphere.origin - ray.origin };
+			float dp{ Vector3::Dot(line,ray.direction) };
+			float lineLenght{ line.Normalize() };
+			float od{ sqrtf(lineLenght * lineLenght - dp * dp) };
+			float tca{ sqrtf(sphere.radius * sphere.radius - od * od) };
+			float t{ dp - tca };
+			Vector3 intersectPoint{ ray.origin + t * ray.direction };
+			
+			if (intersectPoint.x >= sphere.origin.x - sphere.radius && intersectPoint.x <= sphere.origin.x + sphere.radius &&
+				intersectPoint.y >= sphere.origin.y - sphere.radius && intersectPoint.y <= sphere.origin.y + sphere.radius)
+			{
+				hitRecord.didHit = true;
+				hitRecord.t = t;
+				return true;
+			}
+			hitRecord.didHit = false;
+			return false;
+
 			assert(false && "No Implemented Yet!");
 			return false;
 		}
@@ -28,6 +45,17 @@ namespace dae
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 			//todo W1
+			float t{ Vector3::Dot((plane.origin - ray.origin), plane.normal) / Vector3::Dot(ray.direction,plane.normal) };
+			if (t > ray.min && t < ray.max)
+			{
+				Vector3 intersectPoint{ ray.origin + t * ray.direction };
+				hitRecord.didHit = true;
+				hitRecord.t = t;
+				return true;
+			}
+			hitRecord.didHit = false;
+			return false;
+
 			assert(false && "No Implemented Yet!");
 			return false;
 		}

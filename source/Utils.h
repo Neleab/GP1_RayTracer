@@ -19,11 +19,19 @@ namespace dae
 			float tca{ sqrtf(sphere.radius * sphere.radius - od * od) };
 			float t{ dp - tca };
 			Vector3 intersectPoint{ ray.origin + t * ray.direction };
+
+			//float A{ Vector3::Dot(ray.direction,ray.direction)};
+			//float B{ Vector3::Dot(2 * ray.direction,(ray.origin - sphere.origin)) };
+			//float C{ Vector3::Dot((ray.origin - sphere.origin),(ray.origin - sphere.origin))  - (powf(sphere.radius,2)) };
+			////float t{ (B * B) - 4 * A * C };
+			//Vector3 intersectPoint{ ray.origin + t * ray.direction };
 			
-			if (intersectPoint.x >= sphere.origin.x - sphere.radius && intersectPoint.x <= sphere.origin.x + sphere.radius &&
-				intersectPoint.y >= sphere.origin.y - sphere.radius && intersectPoint.y <= sphere.origin.y + sphere.radius)
+			if (t > 0 && t > ray.min && t < ray.max)
 			{
+				intersectPoint = ray.origin + t * ray.direction;
 				hitRecord.didHit = true;
+				hitRecord.origin = intersectPoint;
+				hitRecord.normal = (hitRecord.origin - sphere.origin)/sphere.radius;
 				hitRecord.t = t;
 				return true;
 			}
@@ -44,12 +52,14 @@ namespace dae
 		//PLANE HIT-TESTS
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W1
+			////todo W1
 			float t{ Vector3::Dot((plane.origin - ray.origin), plane.normal) / Vector3::Dot(ray.direction,plane.normal) };
 			if (t > ray.min && t < ray.max)
 			{
-				Vector3 intersectPoint{ ray.origin + t * ray.direction };
 				hitRecord.didHit = true;
+				Vector3 intersectPoint{ ray.origin + t * ray.direction };
+				hitRecord.origin = intersectPoint;
+				hitRecord.normal = plane.normal;
 				hitRecord.t = t;
 				return true;
 			}
@@ -102,7 +112,16 @@ namespace dae
 		//Direction from target to light
 		inline Vector3 GetDirectionToLight(const Light& light, const Vector3 origin)
 		{
-			//todo W3
+			switch (light.type)
+			{
+			case LightType::Point:
+				return light.origin - origin;
+				break;
+			case LightType::Directional:
+				break;
+			default:
+				break;
+			}
 			assert(false && "No Implemented Yet!");
 			return {};
 		}

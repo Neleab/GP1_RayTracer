@@ -25,6 +25,7 @@ void Renderer::Render(Scene* pScene) const
 {
 	Vector3 cameraOrigen{ 0,0,0 };
 	Camera& camera = pScene->GetCamera();
+	float fov = tanf(camera.fovAngle * TO_RADIANS / 2);
 	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
 
@@ -43,49 +44,43 @@ void Renderer::Render(Scene* pScene) const
 			float pixelX = px + 0.5f;
 			float pixelY = py + 0.5f;
 
-			float cameraX{ ((2.f * (pixelX + 0.5f) / widthScreen) - 1.f) * aspectRatio };
-			float cameraY{ 1.f - (2.f * pixelY)/ heightScreen};
+			float cameraX{ ((2.f * (pixelX + 0.5f) / widthScreen) - 1.f) * aspectRatio * fov };
+			float cameraY{ (1.f - (2.f * pixelY)/ heightScreen) * fov };
 
 			Vector3 rayDirection{ cameraX ,cameraY ,1 };
+			rayDirection = camera.CalculateCameraToWorld().TransformVector(rayDirection);
 			Vector3 rayDirectionNormelized{ rayDirection.Normalized() };
 
-			Ray hitRay{ cameraOrigen,rayDirectionNormelized};
+			Ray hitRay{ camera.origin,rayDirectionNormelized};
 
-			//ColorRGB finalColor{ rayDirectionNormelized.x, rayDirectionNormelized.y, rayDirectionNormelized.z };
-
-			//TODO#4
 			ColorRGB finalColor{};
 			HitRecord closeHit{};
 
-			//Sphere testSphere{ Vector3{0.f,0.f,100.f},50.f,0 };
-			//GeometryUtils::HitTest_Sphere(testSphere, hitRay, closeHit);
-			//if (closeHit.didHit)
-			//{
-			//	const float scaled_t{ (closeHit.t - 50.f) / 40.f };
-			//	//finalColor = materials[closeHit.materialIndex]->Shade();
-			//	//TODO 5
-			//	finalColor = { scaled_t, scaled_t ,scaled_t };
-			//}
-
-			//TODO6
 			pScene->GetClosestHit(hitRay,closeHit);
 			if (closeHit.didHit)
 			{
 				finalColor = materials[closeHit.materialIndex]->Shade();
+				//Lights
+
+				for (size_t i = 0; i < pScene->GetLights().size(); i++)
+				{
+					Vector3 lightDirection{ LightUtils::GetDirectionToLight(pScene->GetLights().at(i), closeHit.origin) };
+
+					Vector3 offsetOrigin = closeHit.origin + closeHit.normal * 0.0001f;
+					Ray lightRay{ offsetOrigin, lightDirection.Normalized()};
+
+					lightRay.max = lightDirection.Normalize();
+					lightRay.min = 0.0001f;
+
+					if (pScene->DoesHit(lightRay))
+					{
+						finalColor *= 0.5f;
+					}
+				}
 			}
 
-			//TODO 9/10
-			//Plane testPlane{ {0.f,-50.f,0.f},{0.f,1.f,0.f},0 };
-			//GeometryUtils::HitTest_Plane(testPlane, hitRay, closeHit);
-			//if (closeHit.didHit)
-			//{
-			//	const float scaled_t{ closeHit.t / 500.f };
-			//	//finalColor = materials[closeHit.materialIndex]->Shade();
-			//	finalColor = { scaled_t, scaled_t ,scaled_t };
-			//}
-
-
 			//Update Color in Buffer
+
 			finalColor.MaxToOne();
 
 			m_pBufferPixels[px + (py * m_Width)] = SDL_MapRGB(m_pBuffer->format,

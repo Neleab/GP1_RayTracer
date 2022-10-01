@@ -116,21 +116,30 @@ namespace dae {
 
 	Matrix Matrix::CreateRotationX(float pitch)
 	{
-		//todo W1
+		return Matrix{ Vector3{1,0,0},
+					   Vector3{0,cosf(pitch),sinf(pitch) * -1},
+					   Vector3{0,sinf(pitch),cosf(pitch)},
+					   Vector3{0,0,0} };
 		assert(false && "Not Implemented Yet");
 		return {};
 	}
 
 	Matrix Matrix::CreateRotationY(float yaw)
 	{
-		//todo W1
+		return Matrix{ Vector3{cosf(yaw),0,sinf(yaw)*-1},
+					   Vector3{0,1,0},
+					   Vector3{sinf(yaw),0,cosf(yaw)},
+					   Vector3{0,0,0} };
 		assert(false && "Not Implemented Yet");
 		return {};
 	}
 
 	Matrix Matrix::CreateRotationZ(float roll)
 	{
-		//todo W1
+		return Matrix{ Vector3{cosf(roll),sinf(roll),0},
+					   Vector3{sinf(roll)*-1,cosf(roll),0},
+					   Vector3{0,0,1},
+					   Vector3{0,0,0} };
 		assert(false && "Not Implemented Yet");
 		return {};
 	}

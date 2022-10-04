@@ -12,28 +12,35 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			Vector3 line{sphere.origin - ray.origin };
+			// 3-4 fps geometric formula
+			/*Vector3 line{sphere.origin - ray.origin };
 			float dp{ Vector3::Dot(line,ray.direction) };
 			float lineLenght{ line.Normalize() };
 			float od{ sqrtf(lineLenght * lineLenght - dp * dp) };
 			float tca{ sqrtf(sphere.radius * sphere.radius - od * od) };
 			float t{ dp - tca };
-			Vector3 intersectPoint{ ray.origin + t * ray.direction };
+			Vector3 intersectPoint{ ray.origin + t * ray.direction };*/
 
-			//float A{ Vector3::Dot(ray.direction,ray.direction)};
-			//float B{ Vector3::Dot(2 * ray.direction,(ray.origin - sphere.origin)) };
-			//float C{ Vector3::Dot((ray.origin - sphere.origin),(ray.origin - sphere.origin))  - (powf(sphere.radius,2)) };
-			////float t{ (B * B) - 4 * A * C };
-			//Vector3 intersectPoint{ ray.origin + t * ray.direction };
-			
-			if (t > 0 && t > ray.min && t < ray.max)
+			// 17-18 fps discriminant formula
+			float A{ Vector3::Dot(ray.direction,ray.direction)};
+			float B{ Vector3::Dot(2 * ray.direction,(ray.origin - sphere.origin)) };
+			float C{ Vector3::Dot((ray.origin - sphere.origin),(ray.origin - sphere.origin))  - (sphere.radius * sphere.radius) };
+			float discriminant{ B * B - 4 * A * C };
+
+			if (discriminant > 0)
 			{
-				intersectPoint = ray.origin + t * ray.direction;
-				hitRecord.didHit = true;
-				hitRecord.origin = intersectPoint;
-				hitRecord.normal = (hitRecord.origin - sphere.origin)/sphere.radius;
-				hitRecord.t = t;
-				return true;
+				float t{ (- B - sqrtf(B * B - 4 * A * C))/(2*A)};
+				Vector3 intersectPoint{ ray.origin + t * ray.direction };
+
+				if (t > 0 && t > ray.min && t < ray.max)
+				{
+					intersectPoint = ray.origin + t * ray.direction;
+					hitRecord.didHit = true;
+					hitRecord.origin = intersectPoint;
+					hitRecord.normal = (hitRecord.origin - sphere.origin) / sphere.radius;
+					hitRecord.t = t;
+					return true;
+				}
 			}
 			hitRecord.didHit = false;
 			return false;

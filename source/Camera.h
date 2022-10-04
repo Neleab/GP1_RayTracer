@@ -48,8 +48,8 @@ namespace dae
 		void Update(Timer* pTimer)
 		{
 			const float deltaTime = pTimer->GetElapsed();
-			const float speedMovement = 100;
-			const float speedRotation = 10;
+			const float speedMovement = 10.f;
+			const float speedRotation = 1.f;
 			Matrix totalPitch;
 			Matrix totalYaw;
 			 
@@ -77,26 +77,28 @@ namespace dae
 			int mouseX{}, mouseY{};
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
 
-			if (SDL_BUTTON(SDL_BUTTON_LEFT) & mouseState || (SDL_BUTTON(SDL_BUTTON_LEFT) && SDL_BUTTON(SDL_BUTTON_RIGHT) & mouseState))
-			{
-				origin.z -= speedMovement * mouseY * deltaTime;
-			}
 			if (SDL_BUTTON(SDL_BUTTON_LEFT) & mouseState)
 			{
-				totalPitch = Matrix::CreateRotationX((speedRotation * (mouseX*-1) * deltaTime) * TO_RADIANS);
-				Matrix totalRotation = totalPitch * totalYaw;
+				origin.z -= speedMovement * mouseY * deltaTime;
 
-				forward = totalRotation.TransformVector(Vector3::UnitZ);
+				totalYaw = Matrix::CreateRotationY((speedRotation * (mouseX * -1) * deltaTime) * TO_RADIANS);
+				Matrix totalRotation = totalYaw;
+
+				forward = totalRotation.TransformVector(forward);
 				forward.Normalized();
 			}
-			if (SDL_BUTTON(SDL_BUTTON_RIGHT) & mouseState)
+			else if (SDL_BUTTON(SDL_BUTTON_RIGHT) & mouseState)
 			{
-				totalPitch = Matrix::CreateRotationX((speedRotation * (mouseX * -1) * deltaTime) * TO_RADIANS);
-				totalYaw = Matrix::CreateRotationY((speedRotation * (mouseY * -1) * deltaTime) * TO_RADIANS);
+				totalPitch = Matrix::CreateRotationX((speedRotation * (mouseY * -1) * deltaTime) * TO_RADIANS);
+				totalYaw = Matrix::CreateRotationY((speedRotation * (mouseX * -1) * deltaTime) * TO_RADIANS);
 				Matrix totalRotation = totalPitch * totalYaw;
 
-				forward = totalRotation.TransformVector(Vector3::UnitZ);
+				forward = totalRotation.TransformVector(forward);
 				forward.Normalized();
+			}
+			else if (SDL_BUTTON(SDL_BUTTON_LEFT) && SDL_BUTTON(SDL_BUTTON_RIGHT) & mouseState)
+			{
+				origin.z -= speedMovement * mouseY * deltaTime;
 			}
 
 			//todo: W2

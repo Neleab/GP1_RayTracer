@@ -59,22 +59,46 @@ void Renderer::Render(Scene* pScene) const
 			pScene->GetClosestHit(hitRay,closeHit);
 			if (closeHit.didHit)
 			{
-				finalColor = materials[closeHit.materialIndex]->Shade();
 				//Lights
 
 				for (size_t i = 0; i < pScene->GetLights().size(); i++)
 				{
 					Vector3 lightDirection{ LightUtils::GetDirectionToLight(pScene->GetLights().at(i), closeHit.origin) };
-
+					Vector3 lightDirectionNormalized = lightDirection.Normalized();
 					Vector3 offsetOrigin = closeHit.origin + closeHit.normal * 0.0001f;
-					Ray lightRay{ offsetOrigin, lightDirection.Normalized()};
+					Ray lightRay{ offsetOrigin, lightDirectionNormalized};
 
 					lightRay.max = lightDirection.Normalize();
 					lightRay.min = 0.0001f;
 
-					if (pScene->DoesHit(lightRay))
+					if (!pScene->DoesHit(lightRay) || !m_ShadowsEnabled)
 					{
-						finalColor *= 0.5f;
+						float diffusedLight = Vector3::Dot(closeHit.normal, lightDirection);
+						Vector3 fromHitToCamera = camera.origin - closeHit.origin;
+
+						if (diffusedLight >= 0)
+						{
+							ColorRGB Radiance = LightUtils::GetRadiance(pScene->GetLights().at(i), closeHit.origin);
+							switch (m_CurrentLightingMode)
+							{
+							case dae::Renderer::LightingMode::ObservedArea:
+								finalColor += ColorRGB{1,1,1} * diffusedLight;
+								break;
+							case dae::Renderer::LightingMode::Radiance:
+								finalColor += Radiance;
+								break;
+							case dae::Renderer::LightingMode::BRDF:
+								finalColor += materials[closeHit.materialIndex]->Shade(closeHit, lightDirection.Normalized(), -rayDirection.Normalized());
+								break;
+							case dae::Renderer::LightingMode::Combined:
+								finalColor += Radiance
+									* materials[closeHit.materialIndex]->Shade(closeHit, lightDirection.Normalized(), -rayDirection.Normalized())
+									* diffusedLight;
+								break;
+							default:
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -98,4 +122,25 @@ void Renderer::Render(Scene* pScene) const
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBuffer, "RayTracing_Buffer.bmp");
+}
+
+void Renderer::CycleLightingMode()
+{
+	switch (m_CurrentLightingMode)
+	{
+	case dae::Renderer::LightingMode::ObservedArea:
+		m_CurrentLightingMode = dae::Renderer::LightingMode::Radiance;
+		break;
+	case dae::Renderer::LightingMode::Radiance:
+		m_CurrentLightingMode = dae::Renderer::LightingMode::BRDF;
+		break;
+	case dae::Renderer::LightingMode::BRDF:
+		m_CurrentLightingMode = dae::Renderer::LightingMode::Combined;
+		break;
+	case dae::Renderer::LightingMode::Combined:
+		m_CurrentLightingMode = dae::Renderer::LightingMode::ObservedArea;
+		break;
+	default:
+		break;
+	}
 }

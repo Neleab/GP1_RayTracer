@@ -123,17 +123,41 @@ namespace dae
 
 		void CalculateNormals()
 		{
-			assert(false && "No Implemented Yet!");
+			for (size_t i = 0; i < indices.size(); i += 3)
+			{
+				Vector3 a{ positions[indices[i + 1]] - positions[indices[i]] };
+				Vector3 b{ positions[indices[i + 2]] - positions[indices[i]] };
+				normals.push_back(Vector3::Cross(a, b));
+			}
+			//assert(false && "No Implemented Yet!");
 		}
 
 		void UpdateTransforms()
 		{
-			assert(false && "No Implemented Yet!");
+			transformedPositions.clear();
+			transformedNormals.clear();
+
+			transformedPositions.reserve(positions.size());
+			transformedNormals.reserve(normals.size());
+			//assert(false && "No Implemented Yet!");
 			//Calculate Final Transform 
 			//const auto finalTransform = ...
 
 			//Transform Positions (positions > transformedPositions)
 			//...
+			Matrix S = scaleTransform;
+			Matrix R = rotationTransform;
+			Matrix T = translationTransform;
+
+
+			for (Vector3 vertex : positions)
+			{
+				transformedPositions.emplace_back(T.TransformPoint(R.TransformPoint(S.TransformPoint(vertex))));
+			}
+			for (Vector3 normal : normals)
+			{
+				transformedNormals.emplace_back(T.TransformVector(R.TransformVector(S.TransformVector(normal))));
+			}
 
 			//Transform Normals (normals > transformedNormals)
 			//...

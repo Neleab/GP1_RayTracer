@@ -88,6 +88,60 @@ namespace dae
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 			//todo W5
+			Vector3 a{ triangle.v1 - triangle.v0 };
+			Vector3 b{ triangle.v2 - triangle.v0 };
+			Vector3 normal{ triangle.normal };
+
+			TriangleCullMode triangleCull = triangle.cullMode;
+			if (ignoreHitRecord)
+			{
+				switch (triangle.cullMode)
+				{
+				case dae::TriangleCullMode::FrontFaceCulling:
+					triangleCull = TriangleCullMode::BackFaceCulling;
+					break;
+				case dae::TriangleCullMode::BackFaceCulling:
+					triangleCull = TriangleCullMode::FrontFaceCulling;
+					break;
+				case dae::TriangleCullMode::NoCulling:
+					triangleCull = TriangleCullMode::NoCulling;
+					break;
+				default:
+					break;
+				}
+			}
+
+			if ((Vector3::Dot(normal,ray.direction) != 0 && triangleCull == TriangleCullMode::NoCulling) ||
+				(Vector3::Dot(normal, ray.direction) < 0 && triangleCull == TriangleCullMode::BackFaceCulling) ||
+				(Vector3::Dot(normal, ray.direction) > 0 && triangleCull == TriangleCullMode::FrontFaceCulling))
+			{
+				Vector3 l{ ((triangle.v0+triangle.v1+triangle.v2)/3.f)-ray.origin};
+				float t{ Vector3::Dot(l, normal) / Vector3::Dot(ray.direction, normal) };
+				if (t > ray.min && t < ray.max)
+				{
+					Vector3 intersectPoint{ ray.origin + t * ray.direction };
+					Vector3 pointToSideA{ intersectPoint - triangle.v0 };
+					Vector3 edgeA{ triangle.v1 - triangle.v0 };
+					Vector3 pointToSideB{ intersectPoint - triangle.v1 };
+					Vector3 edgeB{ triangle.v2 - triangle.v1 };
+					Vector3 pointToSideC{ intersectPoint - triangle.v2 };
+					Vector3 edgeC{ triangle.v0 - triangle.v2 };
+
+					if (Vector3::Dot(normal, Vector3::Cross(edgeA,pointToSideA)) > 0 
+						&& Vector3::Dot(normal, Vector3::Cross(edgeB, pointToSideB)) > 0
+						&& Vector3::Dot(normal, Vector3::Cross(edgeC, pointToSideC)) > 0)
+					{
+						hitRecord.didHit = true;
+						hitRecord.origin = intersectPoint;
+						hitRecord.normal = normal;
+						hitRecord.t = t;
+						return true;
+					}
+				}
+			}
+
+			hitRecord.didHit = false;
+			return false;
 			assert(false && "No Implemented Yet!");
 			return false;
 		}
@@ -101,7 +155,48 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W5
+			float currentClosedHit{0};
+			bool firstHit{ false };
+			Vector3 closeHitOrigin;
+			Vector3 closeHitNormal;
+
+			for (size_t i = 0; i < mesh.indices.size(); i += 3)
+			{
+				Vector3 v0 = mesh.transformedPositions[mesh.indices[i]];
+				Vector3 v1 = mesh.transformedPositions[mesh.indices[i + 1]];
+				Vector3 v2 = mesh.transformedPositions[mesh.indices[i + 2]];
+				Triangle triangle{ v0,v1,v2 };
+				triangle.cullMode = mesh.cullMode;
+				triangle.materialIndex = mesh.materialIndex;
+				triangle.normal = mesh.transformedNormals[i/3];
+				GeometryUtils::HitTest_Triangle(triangle, ray, hitRecord,ignoreHitRecord);
+				if (hitRecord.didHit)
+				{
+					if (!firstHit)
+					{
+						currentClosedHit = hitRecord.t;
+						closeHitOrigin = hitRecord.origin;
+						closeHitNormal = hitRecord.normal;
+						firstHit = true;
+						hitRecord.materialIndex = triangle.materialIndex;
+					}
+					if (currentClosedHit > hitRecord.t)
+					{
+						currentClosedHit = hitRecord.t;
+						closeHitOrigin = hitRecord.origin;
+						closeHitNormal = hitRecord.normal;
+						hitRecord.materialIndex = triangle.materialIndex;
+					}
+					else
+					{
+						hitRecord.origin = closeHitOrigin;
+						hitRecord.normal = closeHitNormal;
+						hitRecord.t = currentClosedHit;
+					}
+				}
+			}
+			hitRecord.didHit = firstHit;
+			return hitRecord.didHit;
 			assert(false && "No Implemented Yet!");
 			return false;
 		}
